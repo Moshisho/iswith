@@ -110,7 +110,7 @@ async function analyzeJobInputs(job, client, owner, repo) {
     
     // Get job logs
     const jobLogs = await client.getJobLogs(owner, repo, job.id);
-    
+    console.debug(`/repos/${owner}/${repo}/actions/jobs/${job.id}/logs`);
     // Parse for "Inputs" section (only present in called workflows)
     const inputs = parseSetupJobLogs(jobLogs, false);
     

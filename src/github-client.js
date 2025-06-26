@@ -177,20 +177,21 @@ class GitHubClient {
         }
       };
 
-      const req = https.request(options, (res) => {
+      const req = https.request(options, async (res) => {
         let data = '';
-
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-
-        res.on('end', () => {
-          if (res.statusCode >= 400) {
-            reject(new Error(`GitHub API error: ${res.statusCode} ${res.statusMessage}`));
-            return;
-          }
-          resolve(data);
-        });
+        if (res.statusCode === 302 && res.headers.location) {
+          data = await this.downloadLogs(res.headers.location);
+          // console.debug(data);
+        } else if (res.statusCode >= 400) {
+          reject(new Error(`GitHub API error: ${res.statusCode} ${res.statusMessage}`));
+        } else {
+          res.on('data', (chunk) => {
+            data += chunk;
+          });
+          res.on('end', () => {
+            resolve(data);
+          });
+        }
       });
 
       req.on('error', (error) => {
