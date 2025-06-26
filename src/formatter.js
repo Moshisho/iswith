@@ -41,7 +41,7 @@ function displayResults(results) {
 
   console.log(table.toString());
   
-  console.log(`\n📈 Summary:`);
+  console.log('\n📈 Summary:');
   console.log(`  • Found ${results.length} unique input(s)`);
   console.log(`  • Most common: ${sortedResults[0].name} (${(sortedResults[0].frequency * 100).toFixed(1)}% of runs)`);
   

@@ -31,7 +31,39 @@ npm test
 
 # Lint code
 npm run lint
+
+# Build cross-platform binaries
+npm run build:pkg
 ```
+
+## Testing GitHub Workflows Locally
+
+This project includes GitHub Actions workflows that can be tested locally using the `act` tool:
+
+```bash
+# Install act (if not already installed)
+brew install act  # macOS
+# or download from: https://github.com/nektos/act
+
+# List all available workflows and jobs
+act --list
+
+# Test the CI workflow (requires Docker)
+act push                    # Run full CI workflow
+act --job test             # Run only test job
+act --job build            # Run only build job
+
+# Test with specific event
+act pull_request           # Test PR workflow
+
+# Dry run to see what would execute
+act --dryrun
+
+# Use specific runner image
+act --platform ubuntu-latest=catthehacker/ubuntu:act-latest
+```
+
+**Note**: The `.actrc` file is configured for Apple Silicon Macs with `--container-architecture linux/amd64`.
 
 ## Architecture Notes
 
