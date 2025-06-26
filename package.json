@@ -1,0 +1,41 @@
+{
+  "name": "iswith",
+  "version": "1.0.0",
+  "description": "Discover what inputs are being used in your Github workflows",
+  "main": "src/index.js",
+  "bin": {
+    "iswith": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node src/index.js",
+    "test": "node --test",
+    "lint": "eslint src/**/*.js",
+    "build": "nexe src/index.js -t node-18.17.0 -o dist/iswith",
+    "build:all": "npm run build:linux && npm run build:macos && npm run build:windows",
+    "build:linux": "nexe src/index.js -t linux-x64-18.17.0 -o dist/iswith-linux",
+    "build:macos": "nexe src/index.js -t macos-x64-18.17.0 -o dist/iswith-macos",
+    "build:windows": "nexe src/index.js -t windows-x64-18.17.0 -o dist/iswith-windows.exe",
+    "build:pkg": "rm -rf dist/* && mkdir -p dist/linux dist/macos dist/windows && pkg . --targets node18-linux-x64 --output dist/linux/iswith && pkg . --targets node18-macos-x64 --output dist/macos/iswith && pkg . --targets node18-win-x64 --output dist/windows/iswith.exe"
+  },
+  "keywords": [
+    "github",
+    "workflows",
+    "inputs",
+    "cli",
+    "analysis"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cli-table3": "^0.6.3"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "nexe": "^5.0.0-beta.4",
+    "pkg": "^5.8.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
