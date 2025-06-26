@@ -1,12 +1,36 @@
 const https = require('https');
+const { GitHubAuth } = require('./auth');
 
 class GitHubClient {
-  constructor() {
+  constructor(options = {}) {
     this.baseUrl = 'https://api.github.com';
-    this.token = process.env.GITHUB_TOKEN;
+    this.token = options.token || process.env.GITHUB_TOKEN;
+    this.appId = options.appId;
+    this.privateKeyPath = options.privateKeyPath;
+    this.authOptions = options;
   }
 
-  async makeRequest(path) {
+  async getAuthToken(owner) {
+    if (this.token) {
+      return this.token;
+    }
+
+    try {
+      const token = await GitHubAuth.getAuthToken(owner, this.authOptions);
+      this.token = token; // Cache for subsequent requests
+      return token;
+    } catch (error) {
+      console.warn(`Authentication failed: ${error.message}`);
+      return null;
+    }
+  }
+
+  async makeRequest(path, owner = null) {
+    // Try to get auth token if we have owner info and no token yet
+    if (!this.token && owner) {
+      await this.getAuthToken(owner);
+    }
+
     return new Promise((resolve, reject) => {
       const options = {
         hostname: 'api.github.com',
@@ -51,15 +75,20 @@ class GitHubClient {
 
   async getWorkflows(owner, repo) {
     const path = `/repos/${owner}/${repo}/actions/workflows`;
-    return this.makeRequest(path);
+    return this.makeRequest(path, owner);
   }
 
   async getWorkflowRuns(owner, repo, workflowId, page = 1) {
     const path = `/repos/${owner}/${repo}/actions/workflows/${workflowId}/runs?page=${page}&per_page=10`;
-    return this.makeRequest(path);
+    return this.makeRequest(path, owner);
   }
 
   async getWorkflowRunLogs(owner, repo, runId) {
+    // Ensure we have auth token for log access
+    if (!this.token) {
+      await this.getAuthToken(owner);
+    }
+
     const path = `/repos/${owner}/${repo}/actions/runs/${runId}/logs`;
     return new Promise((resolve, reject) => {
       const options = {

@@ -1,8 +1,8 @@
 const { GitHubClient } = require('./github-client');
 const { parseWorkflowLogs, analyzeInputUsage } = require('./log-parser');
 
-async function analyzeWorkflowInputs(owner, repo) {
-  const client = new GitHubClient();
+async function analyzeWorkflowInputs(owner, repo, authOptions = {}) {
+  const client = new GitHubClient(authOptions);
   const allInputs = [];
 
   try {

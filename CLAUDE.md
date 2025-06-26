@@ -65,6 +65,56 @@ act --platform ubuntu-latest=catthehacker/ubuntu:act-latest
 
 **Note**: The `.actrc` file is configured for Apple Silicon Macs with `--container-architecture linux/amd64`.
 
+## Authentication
+
+The tool supports multiple authentication methods for accessing GitHub repositories and workflow logs:
+
+### 1. Personal Access Token
+```bash
+# Environment variable
+export GITHUB_TOKEN=ghp_your_token_here
+iswith owner/repo
+
+# Command line flag
+iswith --token ghp_your_token_here owner/repo
+```
+
+### 2. GitHub App (Recommended for Organizations)
+```bash
+# Environment variables
+export GITHUB_APP_ID=123456
+export GITHUB_PRIVATE_KEY_PATH=/path/to/private-key.pem
+iswith owner/repo
+
+# Command line flags
+iswith --app-id 123456 --private-key ./private-key.pem owner/repo
+```
+
+### 3. No Authentication
+```bash
+# Limited to public repositories and publicly accessible workflow data
+iswith owner/repo
+```
+
+## GitHub App Setup
+
+To create a GitHub App for enhanced authentication:
+
+1. Go to GitHub Settings > Developer settings > GitHub Apps
+2. Create a new GitHub App with these permissions:
+   - Repository permissions:
+     - Actions: Read
+     - Metadata: Read
+3. Generate and download a private key
+4. Install the app on repositories or organizations
+5. Use the App ID and private key path with the CLI
+
+**Benefits of GitHub App authentication:**
+- Higher rate limits (5,000 requests/hour vs 60 unauthenticated)
+- Organization-level access management
+- More secure than personal access tokens
+- Better audit trails
+
 ## Architecture Notes
 
 The project should be structured to:
