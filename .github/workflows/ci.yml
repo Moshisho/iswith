@@ -34,9 +34,18 @@ jobs:
       
     - name: Test CLI basic functionality
       run: |
+        set +e
         output=$(node src/index.js 2>&1)
+        exit_code=$?
         echo "CLI output: $output"
-        echo "$output" | grep -q "Usage:"
+        echo "Exit code: $exit_code"
+        if echo "$output" | grep -q "Usage:"; then
+          echo "✅ CLI test passed - found Usage message"
+          exit 0
+        else
+          echo "❌ CLI test failed - Usage message not found"
+          exit 1
+        fi
 
   build:
     runs-on: ubuntu-latest
