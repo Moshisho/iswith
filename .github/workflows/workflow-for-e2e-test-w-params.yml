@@ -1,0 +1,43 @@
+name: e2e-test-w-params
+
+on:
+  workflow_dispatch:
+    inputs:
+      choice-input:
+        type: choice
+        description: Who to greet
+        options: 
+        - me
+        - you
+      message:
+        description: "Message to display"
+        required: true
+      use-emoji:
+        type: boolean
+        description: Include 🎉🤣 emojis
+      environment:
+        description: "Environment to use"
+        type: environment
+      some-list-as-string:
+        description: "Some array as a string"
+        default: '["prod-1"]'
+      some-json:
+        description: "Some JSON to use"
+        default: '{ exampleObj: { exampleArray: [1, 2] } }'
+
+jobs:
+  just_a_job:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+
+    steps:
+      - run: echo "Succesfully triggered from another repository"
+      - run: "echo some-list - should be Array: ${{ fromJSON(github.event.inputs.some-list-as-string) }}"
+      - run: echo "${{ github.event.inputs.some-list-as-string }} | jq -r 'keys[]'"
+      - run: "echo some-json - should be Object: ${{ fromJSON(github.event.inputs.some-json) }}"
+      - run: echo "${{ github.event.inputs.some-json }} | jq ."
+      - name: Send greeting
+        run: |
+          echo "${{ github.event.inputs.message }} ${{ github.event.inputs.choice-input }}" 
+          echo "${{ fromJSON('["", "🥳"]')[github.event.inputs.use-emoji == 'true'] }}" 
