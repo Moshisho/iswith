@@ -1,0 +1,118 @@
+name: e2e-test-w-params
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+          - development
+      version:
+        description: 'Version to deploy'
+        required: true
+        default: 'latest'
+        type: string
+      enable_debug:
+        description: 'Enable debug mode'
+        required: false
+        default: false
+        type: boolean
+      timeout_minutes:
+        description: 'Timeout in minutes'
+        required: false
+        default: '30'
+        type: string
+      custom_message:
+        description: 'Custom message for deployment'
+        required: false
+        default: 'Automated deployment'
+        type: string
+
+jobs:
+  test_inputs:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Display all inputs
+      run: |
+        echo "🚀 Testing workflow inputs detection"
+        echo "Environment: ${{ inputs.environment }}"
+        echo "Version: ${{ inputs.version }}"
+        echo "Debug enabled: ${{ inputs.enable_debug }}"
+        echo "Timeout: ${{ inputs.timeout_minutes }} minutes"
+        echo "Message: ${{ inputs.custom_message }}"
+    
+    - name: Test input usage in conditions
+      if: inputs.enable_debug == true
+      run: |
+        echo "Debug mode is enabled!"
+        echo "Using environment: ${{ inputs.environment }}"
+        echo "Deploying version: ${{ inputs.version }}"
+    
+    - name: Environment-specific logic
+      run: |
+        if [ "${{ inputs.environment }}" = "production" ]; then
+          echo "🔥 Production deployment detected"
+          echo "Extra safety checks enabled"
+        elif [ "${{ inputs.environment }}" = "staging" ]; then
+          echo "🧪 Staging deployment"
+          echo "Running with version: ${{ inputs.version }}"
+        else
+          echo "🔧 Development deployment"
+        fi
+    
+    - name: Use inputs in environment variables
+      env:
+        DEPLOY_ENV: ${{ inputs.environment }}
+        DEPLOY_VERSION: ${{ inputs.version }}
+        DEBUG_MODE: ${{ inputs.enable_debug }}
+        TIMEOUT: ${{ inputs.timeout_minutes }}
+        MESSAGE: ${{ inputs.custom_message }}
+      run: |
+        echo "Environment variables set from inputs:"
+        echo "DEPLOY_ENV=$DEPLOY_ENV"
+        echo "DEPLOY_VERSION=$DEPLOY_VERSION"
+        echo "DEBUG_MODE=$DEBUG_MODE"
+        echo "TIMEOUT=$TIMEOUT"
+        echo "MESSAGE=$MESSAGE"
+    
+    - name: Test github.event.inputs access
+      run: |
+        echo "Accessing inputs via github.event.inputs:"
+        echo "github.event.inputs.environment: ${{ github.event.inputs.environment }}"
+        echo "github.event.inputs.version: ${{ github.event.inputs.version }}"
+        echo "github.event.inputs.enable_debug: ${{ github.event.inputs.enable_debug }}"
+    
+    - name: Test input in matrix (simulated)
+      run: |
+        echo "Would run tests for environment: ${{ inputs.environment }}"
+        echo "Test timeout set to: ${{ inputs.timeout_minutes }} minutes"
+        
+  validate_inputs:
+    runs-on: ubuntu-latest
+    needs: test_inputs
+    
+    steps:
+    - name: Validate required inputs
+      run: |
+        if [ -z "${{ inputs.environment }}" ]; then
+          echo "❌ Environment input is missing"
+          exit 1
+        fi
+        
+        if [ -z "${{ inputs.version }}" ]; then
+          echo "❌ Version input is missing"  
+          exit 1
+        fi
+        
+        echo "✅ All required inputs provided"
+        echo "Environment: ${{ inputs.environment }}"
+        echo "Version: ${{ inputs.version }}"
