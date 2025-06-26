@@ -1,0 +1,94 @@
+name: caller-workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: 'Which environment to test'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+          - development
+      app_version:
+        description: 'Application version to deploy'
+        required: true
+        default: 'v1.0.0'
+        type: string
+      run_debug_tests:
+        description: 'Enable debug mode in called workflow'
+        required: false
+        default: false
+        type: boolean
+      test_timeout:
+        description: 'Test timeout in minutes'
+        required: false
+        default: '45'
+        type: string
+
+jobs:
+  prepare_deployment:
+    runs-on: ubuntu-latest
+    outputs:
+      final_environment: ${{ steps.prep.outputs.environment }}
+      final_version: ${{ steps.prep.outputs.version }}
+    
+    steps:
+    - name: Prepare deployment parameters
+      id: prep
+      run: |
+        echo "🔧 Preparing deployment parameters"
+        echo "Input environment: ${{ inputs.target_environment }}"
+        echo "Input version: ${{ inputs.app_version }}"
+        echo "Input debug: ${{ inputs.run_debug_tests }}"
+        echo "Input timeout: ${{ inputs.test_timeout }}"
+        
+        # Process inputs and set outputs
+        echo "environment=${{ inputs.target_environment }}" >> $GITHUB_OUTPUT
+        echo "version=${{ inputs.app_version }}" >> $GITHUB_OUTPUT
+        
+        echo "✅ Parameters prepared for called workflow"
+
+  call_e2e_tests:
+    needs: prepare_deployment
+    uses: ./.github/workflows/e2e-test-w-params.yml
+    with:
+      environment: ${{ needs.prepare_deployment.outputs.final_environment }}
+      version: ${{ needs.prepare_deployment.outputs.final_version }}
+      enable_debug: ${{ inputs.run_debug_tests }}
+      timeout_minutes: ${{ inputs.test_timeout }}
+      custom_message: "Deployment triggered by caller-workflow"
+      caller_workflow: "caller-workflow"
+
+  verify_results:
+    needs: [prepare_deployment, call_e2e_tests]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Verify deployment completed
+      run: |
+        echo "🎉 E2E tests completed successfully"
+        echo "Environment: ${{ needs.prepare_deployment.outputs.final_environment }}"
+        echo "Version: ${{ needs.prepare_deployment.outputs.final_version }}"
+        echo "Called workflow completed with success"
+        
+    - name: Test inputs in verification
+      env:
+        VERIFIED_ENV: ${{ inputs.target_environment }}
+        VERIFIED_VERSION: ${{ inputs.app_version }}
+        DEBUG_ENABLED: ${{ inputs.run_debug_tests }}
+        TEST_TIMEOUT: ${{ inputs.test_timeout }}
+      run: |
+        echo "Verification using original inputs:"
+        echo "VERIFIED_ENV=$VERIFIED_ENV"
+        echo "VERIFIED_VERSION=$VERIFIED_VERSION" 
+        echo "DEBUG_ENABLED=$DEBUG_ENABLED"
+        echo "TEST_TIMEOUT=$TEST_TIMEOUT"
+        
+        if [ "$VERIFIED_ENV" = "production" ]; then
+          echo "🔥 Production deployment verified"
+        else
+          echo "🧪 Non-production deployment verified"
+        fi
