@@ -140,6 +140,66 @@ class GitHubClient {
       });
     });
   }
+
+  async getWorkflowFile(owner, repo, workflowPath) {
+    // Remove .github/workflows/ prefix if present and ensure .yml/.yaml extension
+    const cleanPath = workflowPath.replace(/^\.github\/workflows\//, '');
+    const path = `/repos/${owner}/${repo}/contents/.github/workflows/${cleanPath}`;
+    
+    try {
+      const response = await this.makeRequest(path, owner);
+      if (response.content) {
+        // Decode base64 content
+        return Buffer.from(response.content, 'base64').toString('utf8');
+      }
+      throw new Error('No content found in workflow file');
+    } catch (error) {
+      throw new Error(`Failed to fetch workflow file: ${error.message}`);
+    }
+  }
+
+  async getWorkflowJobs(owner, repo, runId) {
+    const path = `/repos/${owner}/${repo}/actions/runs/${runId}/jobs`;
+    return this.makeRequest(path, owner);
+  }
+
+  async getJobLogs(owner, repo, jobId) {
+    const path = `/repos/${owner}/${repo}/actions/jobs/${jobId}/logs`;
+    return new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.github.com',
+        path: path,
+        method: 'GET',
+        headers: {
+          'User-Agent': 'iswith-workflow-analyzer',
+          'Accept': 'application/vnd.github.v3+json',
+          ...(this.token && { 'Authorization': `token ${this.token}` })
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          if (res.statusCode >= 400) {
+            reject(new Error(`GitHub API error: ${res.statusCode} ${res.statusMessage}`));
+            return;
+          }
+          resolve(data);
+        });
+      });
+
+      req.on('error', (error) => {
+        reject(new Error(`Job log request failed: ${error.message}`));
+      });
+
+      req.end();
+    });
+  }
 }
 
 module.exports = { GitHubClient };

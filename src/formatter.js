@@ -1,16 +1,20 @@
 const Table = require('cli-table3');
 
-function displayResults(results) {
+function displayResults(results, workflowName = null) {
   if (!results || results.length === 0) {
-    console.log('\nNo workflow inputs found in the analyzed runs.');
+    const scope = workflowName ? `the "${workflowName}" workflow` : 'the analyzed workflows';
+    console.log(`\nNo workflow inputs found in ${scope}.`);
     console.log('This could mean:');
-    console.log('  • The workflows don\'t use inputs');
-    console.log('  • The repository has no recent workflow runs');
-    console.log('  • The workflows use inputs in a pattern not detected');
+    console.log('  • The workflow doesn\'t use inputs');
+    console.log('  • The workflow has no recent runs');
+    console.log('  • The workflow uses inputs in a pattern not detected');
     return;
   }
 
-  console.log('\n📊 Workflow Input Analysis Results\n');
+  const title = workflowName 
+    ? `📊 Workflow Input Analysis Results for "${workflowName}"\n`
+    : '📊 Workflow Input Analysis Results\n';
+  console.log('\n' + title);
 
   const table = new Table({
     head: ['Input Name', 'Total Usage', 'Runs Found', 'Frequency', 'Example Context'],

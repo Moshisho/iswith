@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node src/index.js",
-    "test": "node --test",
+    "test": "node tests/test-parser.js",
+    "test:all": "node --test tests/",
     "lint": "eslint src/**/*.js",
     "build": "nexe src/index.js -t node-18.17.0 -o dist/iswith",
     "build:all": "npm run build:linux && npm run build:macos && npm run build:windows",
@@ -29,6 +30,7 @@
   "license": "MIT",
   "dependencies": {
     "cli-table3": "^0.6.3",
+    "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {

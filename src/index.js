@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-const { analyzeWorkflowInputs } = require('./analyzer');
-const { displayResults } = require('./formatter');
+const { analyzeWorkflowInputs, analyzeWorkflowJobs, analyzeJobInputs, prompt } = require('./analyzer');
 
 function parseArgs(args) {
   const options = {
     repo: null,
+    workflow: null,
     token: null,
     appId: null,
     privateKeyPath: null,
@@ -24,6 +24,8 @@ function parseArgs(args) {
       options.privateKeyPath = args[++i];
     } else if (arg === '--auth-method') {
       options.authMethod = args[++i];
+    } else if (arg === '--workflow' || arg === '-w') {
+      options.workflow = args[++i];
     } else if (arg === '--help' || arg === '-h') {
       showHelp();
       process.exit(0);
@@ -47,11 +49,12 @@ Arguments:
   <owner>/<repo>    GitHub repository to analyze
 
 Options:
-  --token <token>          GitHub personal access token
-  --app-id <id>           GitHub App ID for authentication
-  --private-key <path>    Path to GitHub App private key file
-  --auth-method <method>  Authentication method: token, app, or none
-  -h, --help             Show this help message
+  -w, --workflow <name>   Specific workflow to analyze (optional)
+  --token <token>         GitHub personal access token
+  --app-id <id>          GitHub App ID for authentication
+  --private-key <path>   Path to GitHub App private key file
+  --auth-method <method> Authentication method: token, app, or none
+  -h, --help            Show this help message
 
 Environment Variables:
   GITHUB_TOKEN            GitHub personal access token
@@ -60,9 +63,11 @@ Environment Variables:
 
 Examples:
   iswith microsoft/vscode
-  iswith --token ghp_xxx microsoft/vscode
-  iswith --app-id 123456 --private-key ./key.pem microsoft/vscode
-  GITHUB_TOKEN=ghp_xxx iswith microsoft/vscode
+  iswith --workflow ci microsoft/vscode
+  iswith -w "caller-workflow" owner/repo
+  iswith --token ghp_xxx --workflow ci microsoft/vscode
+  iswith --app-id 123456 --private-key ./key.pem -w deploy owner/repo
+  GITHUB_TOKEN=ghp_xxx iswith --workflow test owner/repo
 `);
 }
 
@@ -91,15 +96,49 @@ async function main() {
   }
 
   try {
-    console.log(`Analyzing workflow inputs for ${owner}/${repo}...`);
+    console.log(`🔍 Analyzing workflow inputs for ${owner}/${repo}`);
+    if (!options.workflow) {
+      console.log('Please specify a workflow name using --workflow or -w');
+      process.exit(1);
+    }
+    
     const authOptions = {
       token: options.token,
       appId: options.appId,
       privateKeyPath: options.privateKeyPath
     };
     
-    const results = await analyzeWorkflowInputs(owner, repo, authOptions);
-    displayResults(results);
+    // Step 1: Get workflow definition and defined inputs
+    const { definedInputs, workflow, client } = await analyzeWorkflowInputs(owner, repo, authOptions, options.workflow);
+    
+    // Step 2: List jobs from recent run and ask user if they want to check job inputs
+    const jobs = await analyzeWorkflowJobs(workflow, client, owner, repo);
+    
+    if (jobs.length > 0) {
+      console.log(`\n❓ Do you want to check job logs for input values?`);
+      console.log(`   (This will show actual input values passed to called workflows)`);
+      const checkJobs = await prompt('Check job inputs? (y/N): ');
+      
+      if (checkJobs.toLowerCase() === 'y' || checkJobs.toLowerCase() === 'yes') {
+        console.log(`\n🔍 Analyzing job inputs...`);
+        
+        let foundInputs = false;
+        for (const job of jobs) {
+          const jobInputs = await analyzeJobInputs(job, client, owner, repo);
+          if (jobInputs.length > 0) {
+            foundInputs = true;
+          }
+        }
+        
+        if (!foundInputs) {
+          console.log(`\n💡 No input values found in job logs.`);
+          console.log(`   This is normal for parent workflows that accept inputs via workflow_dispatch.`);
+          console.log(`   Input values only appear in logs when one workflow calls another.`);
+        }
+      }
+    }
+    
+    console.log(`\n✅ Analysis complete!`);
   } catch (error) {
     if (error.message.includes('401') || error.message.includes('403')) {
       console.error('Error: Authentication failed or insufficient permissions.');
