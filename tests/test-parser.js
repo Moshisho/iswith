@@ -1,20 +1,15 @@
-const { parseSetupJobLogs } = require('./src/workflow-parser');
+const { parseSetupJobLogs } = require('../src/workflow-parser');
 
 // Test with the example log format you provided
-const testLog = `Set up job
-Inputs
-    environment: production
-    version: v2.1.0
-    enable_debug: true
-    timeout_minutes: 60
-    custom_message: Deployment triggered by caller-workflow
-    caller_workflow: caller-workflow
-    app_version: v2.1.0
-    run_debug_tests: true
-    target_environment: production
-    test_timeout: 60
-
-Runner image
+const testLog = `2025-07-02T07:34:11.7537637Z ##[group] Inputs
+2025-07-02T07:34:11.7538461Z   PAYLOAD: { "FED": [ { "artifact": "app", "version": "0.0.0-PR1234-6184c6eed1bf03421ba42ef8d847f07c5ffbc9d8" } ] }
+2025-07-02T07:34:11.7539233Z   ref: refs/pull/1234/merge
+2025-07-02T07:34:11.7539666Z   branch: some-branch
+2025-07-02T07:34:11.7540121Z   some-sha: 4cdfffbc1f839d68bae20111b41f89ac8a227076
+2025-07-02T07:34:11.7540793Z   deployment-url: https://some.site.com/AB1234/
+2025-07-02T07:34:11.7543588Z   some-bool: false
+2025-07-02T07:34:11.7544419Z   job-id: 1234567890
+2025-07-02T07:34:11.7544825Z ##[endgroup]
 `;
 
 console.log('Testing input parser with example log...');

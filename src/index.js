@@ -115,30 +115,27 @@ async function main() {
     const jobs = await analyzeWorkflowJobs(workflow, client, owner, repo);
     
     if (jobs.length > 0) {
-      console.log(`\n❓ Do you want to check job logs for input values?`);
-      console.log(`   (This will show actual input values passed to called workflows)`);
-      const checkJobs = await prompt('Check job inputs? (y/N): ');
+      // console.debug(`****** ${JSON.stringify(jobs[0])} ******`);
+      // console.debug(`Found ${jobs[0].html_url} job(s) in workflow "${workflow.name}"`);
+      console.log(`\n🔍 Analyzing job inputs...`);
       
-      if (checkJobs.toLowerCase() === 'y' || checkJobs.toLowerCase() === 'yes') {
-        console.log(`\n🔍 Analyzing job inputs...`);
-        
-        let foundInputs = false;
-        for (const job of jobs) {
-          const jobInputs = await analyzeJobInputs(job, client, owner, repo);
-          if (jobInputs.length > 0) {
-            foundInputs = true;
-          }
+      let foundInputs = false;
+      for (const job of jobs) {
+        const jobInputs = await analyzeJobInputs(job, client, owner, repo);
+        if (jobInputs.length > 0) {
+          foundInputs = true;
         }
-        
-        if (!foundInputs) {
-          console.log(`\n💡 No input values found in job logs.`);
-          console.log(`   This is normal for parent workflows that accept inputs via workflow_dispatch.`);
-          console.log(`   Input values only appear in logs when one workflow calls another.`);
-        }
+      }
+      
+      if (!foundInputs) {
+        console.log(`\n💡 No input values found in job logs.`);
+        console.log(`   This is normal for parent workflows that accept inputs via workflow_dispatch.`);
+        console.log(`   Input values only appear in logs when one workflow calls another.`);
       }
     }
     
     console.log(`\n✅ Analysis complete!`);
+    process.exit(0);
   } catch (error) {
     if (error.message.includes('401') || error.message.includes('403')) {
       console.error('Error: Authentication failed or insufficient permissions.');

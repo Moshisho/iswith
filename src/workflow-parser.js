@@ -69,8 +69,8 @@ function parseSetupJobLogs(logContent, debug = false) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     
-    // Look for the exact "Inputs" header line that appears in called workflows
-    if (line.trim() === 'Inputs') {
+    // Look for containing "##[group] Inputs" header line that appears in called workflows
+    if (line.trim().includes('##[group] Inputs')) {
       if (debug) {
         console.log(`Found Inputs section at line ${i}: "${line.trim()}"`);
       }
@@ -80,8 +80,11 @@ function parseSetupJobLogs(logContent, debug = false) {
     
     // Stop at the next section or when we hit a line that doesn't look like an input
     if (inInputsSection) {
-      // Check if this line looks like an input: "    inputName: value"
-      const inputMatch = line.match(/^\s{4}([a-zA-Z_][a-zA-Z0-9_-]*)\s*:\s*(.*)$/);
+      if (debug) {
+        console.log(`Processing line ${i}: "${line.slice(0, 20)}..."`);
+      }
+      // Check if this line looks like an input with timestamp: "2025-07-02T07:34:11.7537637Z   inputName: value"
+      const inputMatch = line.match(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s+([a-zA-Z_][a-zA-Z0-9_-]*)\s*:\s*(.*)$/);
       
       if (inputMatch) {
         const inputName = inputMatch[1];
@@ -97,8 +100,7 @@ function parseSetupJobLogs(logContent, debug = false) {
         if (debug) {
           console.log(`Found input: ${inputName} = "${inputValue.trim()}" (line ${i})`);
         }
-      } else if (line.trim() !== '' && !line.match(/^\s{4}/)) {
-        // If we hit a non-empty line that doesn't start with 4 spaces, we're done with inputs
+      } else if (line.trim().includes('##[endgroup]')) {
         if (debug) {
           console.log(`Ending Inputs section at line ${i}: "${line.trim()}"`);
         }

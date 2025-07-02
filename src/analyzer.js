@@ -97,6 +97,20 @@ async function analyzeWorkflowJobs(workflow, client, owner, repo) {
       console.log(`   ${index + 1}. ${job.name} (${job.status})`);
     });
 
+    // Let user choose which job to analyze
+    if (jobs.length > 1) {
+      console.log(`\n❓ Which job would you like to analyze for inputs?`);
+      const jobChoice = await prompt('Enter job number (1-' + jobs.length + '): ');
+      const jobIndex = parseInt(jobChoice) - 1;
+      
+      if (jobIndex >= 0 && jobIndex < jobs.length) {
+        return [jobs[jobIndex]];
+      } else {
+        console.log('Invalid job selection. Analyzing all jobs.');
+        return jobs;
+      }
+    }
+
     return jobs;
 
   } catch (error) {
@@ -107,21 +121,23 @@ async function analyzeWorkflowJobs(workflow, client, owner, repo) {
 async function analyzeJobInputs(job, client, owner, repo) {
   try {
     console.log(`\n🔍 Analyzing job: "${job.name}"`);
+    console.log(`   📄 Getting chunk with Inputs of job logs...`);
     
-    // Get job logs
-    const jobLogs = await client.getJobLogs(owner, repo, job.id);
+    const logChunkWithInputs = await client.getJobLogs(owner, repo, job.id);
+    // console.log(`logChunkWithInputs: ${logChunkWithInputs}`);
     console.debug(`/repos/${owner}/${repo}/actions/jobs/${job.id}/logs`);
-    // Parse for "Inputs" section (only present in called workflows)
-    const inputs = parseSetupJobLogs(jobLogs, false);
+    
+    // Parse for "Inputs" section in Set up job step
+    const inputs = parseSetupJobLogs(logChunkWithInputs, false);
     
     if (inputs.length > 0) {
-      console.log(`Found ${inputs.length} input value(s):`);
+      console.log(`Found ${inputs.length} input value(s) in Set up job step:`);
       inputs.forEach(input => {
         console.log(`  • ${input.name}: ${input.value}`);
       });
       return inputs;
     } else {
-      console.log('No "Inputs" section found in job logs.');
+      console.log('No "Inputs" section found in the given chunk lines.');
       console.log('(This is normal for parent workflows - inputs only appear in called workflows)');
       return [];
     }
